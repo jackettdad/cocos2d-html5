@@ -254,8 +254,14 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
     //! Mode B: circular movement (gravity, radial accel and tangential accel don't are not used in this mode)
     modeB:null,
 
+    //private POINTZERO for ParticleSystem
+    _pointZeroForParticle:cc.p(0,0),
+
     //! Array of particles
     _particles:null,
+
+    //particle pool
+    _particlePool:null,
 
     // color modulate
     //	BOOL colorModulate;
@@ -629,7 +635,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @return {Number}
      */
     getStartRadius:function () {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         return this.modeB.startRadius;
     },
 
@@ -638,7 +644,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {Number} startRadius
      */
     setStartRadius:function (startRadius) {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         this.modeB.startRadius = startRadius;
     },
 
@@ -647,7 +653,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @return {Number}
      */
     getStartRadiusVar:function () {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         return this.modeB.startRadiusVar;
     },
 
@@ -656,7 +662,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {Number} startRadiusVar
      */
     setStartRadiusVar:function (startRadiusVar) {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         this.modeB.startRadiusVar = startRadiusVar;
     },
 
@@ -665,7 +671,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @return {Number}
      */
     getEndRadius:function () {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         return this.modeB.endRadius;
     },
 
@@ -674,7 +680,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {Number} endRadius
      */
     setEndRadius:function (endRadius) {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         this.modeB.endRadius = endRadius;
     },
 
@@ -683,7 +689,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @return {Number}
      */
     getEndRadiusVar:function () {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         return this.modeB.endRadiusVar;
     },
 
@@ -692,7 +698,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param endRadiusVar
      */
     setEndRadiusVar:function (endRadiusVar) {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         this.modeB.endRadiusVar = endRadiusVar;
     },
 
@@ -701,7 +707,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @return {Number}
      */
     getRotatePerSecond:function () {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         return this.modeB.rotatePerSecond;
     },
 
@@ -710,7 +716,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {Number} degrees
      */
     setRotatePerSecond:function (degrees) {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         this.modeB.rotatePerSecond = degrees;
     },
 
@@ -719,7 +725,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @return {Number}
      */
     getRotatePerSecondVar:function () {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         return this.modeB.rotatePerSecondVar;
     },
 
@@ -728,7 +734,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param degrees
      */
     setRotatePerSecondVar:function (degrees) {
-        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_GRAVITY, "Particle Mode should be Gravity");
+        cc.Assert(this._emitterMode == cc.PARTICLE_MODE_RADIUS, "Particle Mode should be Radius");
         this.modeB.rotatePerSecondVar = degrees;
     },
     //////////////////////////////////////////////////////////////////////////
@@ -840,6 +846,8 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {cc.Color4F} startColor
      */
     setStartColor:function (startColor) {
+        if (startColor instanceof cc.Color3B)
+            startColor = cc.c4FFromccc3B(startColor);
         this._startColor = startColor;
     },
 
@@ -857,6 +865,8 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {cc.Color4F} startColorVar
      */
     setStartColorVar:function (startColorVar) {
+        if (startColorVar instanceof cc.Color3B)
+            startColorVar = cc.c4FFromccc3B(startColorVar);
         this._startColorVar = startColorVar;
     },
 
@@ -875,6 +885,8 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {cc.Color4F} endColor
      */
     setEndColor:function (endColor) {
+        if (endColor instanceof cc.Color3B)
+            endColor = cc.c4FFromccc3B(endColor);
         this._endColor = endColor;
     },
 
@@ -892,6 +904,8 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {cc.Color4F} endColorVar
      */
     setEndColorVar:function (endColorVar) {
+        if (endColorVar instanceof cc.Color3B)
+            endColorVar = cc.c4FFromccc3B(endColorVar);
         this._endColorVar = endColorVar;
     },
 
@@ -1035,10 +1049,18 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @param {Number} dst
      */
     setBlendFunc:function (src, dst) {
-        if (this._blendFunc.src != src || this._blendFunc.dst != dst) {
-            this._blendFunc = {src:src, dst:dst};
-            this._updateBlendFunc();
+        if(arguments.length == 1){
+            if (this._blendFunc != src ) {
+                this._blendFunc = src;
+                this._updateBlendFunc();
+            }
+        }else{
+            if (this._blendFunc.src != src || this._blendFunc.dst != dst) {
+                this._blendFunc = {src:src, dst:dst};
+                this._updateBlendFunc();
+            }
         }
+
     },
 
     _opacityModifyRGB:false,
@@ -1070,7 +1092,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      */
     isBlendAdditive:function () {
         //return this._isBlendAdditive;
-        return( this._blendFunc.src == gl.SRC_ALPHA && this._blendFunc.dst == gl.ONE);
+        return (( this._blendFunc.src == gl.SRC_ALPHA && this._blendFunc.dst == gl.ONE) || (this._blendFunc.src == gl.ONE && this._blendFunc.dst == gl.ONE));
     },
 
     /**
@@ -1166,6 +1188,17 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
         this.modeA = new cc.ParticleSystem.ModeA();
         this.modeB = new cc.ParticleSystem.ModeB();
         this._blendFunc = {src:cc.BLEND_SRC, dst:cc.BLEND_DST};
+
+        this._particles = [];
+        this._sourcePosition = new cc.Point(0,0);
+        this._posVar = new cc.Point(0,0);
+
+        this._startColor = new cc.Color4F(1,1,1,1);
+        this._startColorVar = new cc.Color4F(1,1,1,1);
+        this._endColor = new cc.Color4F(1,1,1,1);
+        this._endColorVar = new cc.Color4F(1,1,1,1);
+
+        this._particlePool = [];
     },
 
     /**
@@ -1344,13 +1377,21 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
 
                         var img = new Image();
                         img.src = "data:image/png;base64," + newImageData;
-                        this._texture = img;
-
-                        //save image to TextureCache
                         cc.TextureCache.getInstance().cacheImage(fullpath, img);
+
+                        // Manually decode the base 64 image size since the browser will only do so asynchronously
+                        var w = (buffer[16] << 24) + (buffer[17] << 16) + (buffer[18] << 8) + (buffer[19]),
+                            h = (buffer[20] << 24) + (buffer[21] << 16) + (buffer[22] << 8) + (buffer[23]);
+
+                        // Patch this on so we can correctly create the draw rect later on
+                        img.textureWidth = w;
+                        img.textureHeight = h;
+
+                        this._texture = img;
                     }
                 }
                 cc.Assert(this._texture != null, "cc.ParticleSystem: error loading the texture");
+                this.setTexture(this._texture);;
             }
             ret = true;
         }
@@ -1366,6 +1407,7 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
         this._totalParticles = numberOfParticles;
 
         this._particles = [];
+        this._particlePool = [];
 
         if (!this._particles) {
             cc.log("Particle system: not enough memory");
@@ -1373,11 +1415,9 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
         }
         this._allocatedParticles = numberOfParticles;
 
-        if (this._batchNode) {
-            for (var i = 0; i < this._totalParticles; i++) {
+        if (this._batchNode)
+            for (var i = 0; i < this._totalParticles; i++)
                 this._particles[i].atlasIndex = i;
-            }
-        }
 
         // default, active
         this._isActive = true;
@@ -1410,8 +1450,15 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
         return true;
     },
 
-    destoryParticleSystem:function () {
+    destroyParticleSystem:function () {
+        this._particlePool = null;
         this.unscheduleUpdate();
+    },
+
+    _getParticleObject:function(){
+        if(this._particlePool.length > 0)
+            return this._particlePool.pop();
+        return new cc.Particle();
     },
 
     /**
@@ -1419,11 +1466,10 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
      * @return {Boolean}
      */
     addParticle:function () {
-        if (this.isFull()) {
+        if (this.isFull())
             return false;
-        }
 
-        var particle = new cc.Particle();
+        var particle = this._getParticleObject();
         this.initParticle(particle);
         this._particles.push(particle);
         ++this._particleCount;
@@ -1487,12 +1533,10 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
         particle.deltaRotation = (endA - startA) / particle.timeToLive;
 
         // position
-        if (this._positionType == cc.PARTICLE_TYPE_FREE) {
-            particle.startPos = this.convertToWorldSpace(cc.PointZero());
-
-        } else if (this._positionType == cc.PARTICLE_TYPE_RELATIVE) {
+        if (this._positionType == cc.PARTICLE_TYPE_FREE)
+            particle.startPos = this.convertToWorldSpace(this._pointZeroForParticle);
+        else if (this._positionType == cc.PARTICLE_TYPE_RELATIVE)
             particle.startPos = this._position;
-        }
 
         // direction
         var a = cc.DEGREES_TO_RADIANS(this._angle + this._angleVar * cc.RANDOM_MINUS1_1());
@@ -1537,6 +1581,8 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
         this._isActive = false;
         this._elapsed = this._duration;
         this._emitCounter = 0;
+
+        this._particlePool = [];
     },
 
     /**
@@ -1584,9 +1630,8 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
         if (this._isActive && this._emissionRate) {
             var rate = 1.0 / this._emissionRate;
             //issue #1201, prevent bursts of particles, due to too high emitCounter
-            if (this._particleCount < this._totalParticles) {
+            if (this._particleCount < this._totalParticles)
                 this._emitCounter += dt;
-            }
 
             while ((this._particleCount < this._totalParticles) && (this._emitCounter > rate)) {
                 this.addParticle();
@@ -1594,20 +1639,19 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
             }
 
             this._elapsed += dt;
-            if (this._duration != -1 && this._duration < this._elapsed) {
+            if (this._duration != -1 && this._duration < this._elapsed)
                 this.stopSystem();
-            }
         }
         this._particleIdx = 0;
 
-        var currentPosition = cc.PointZero();
+        var currentPosition; // = cc.PointZero();
         if (this._positionType == cc.PARTICLE_TYPE_FREE) {
-            currentPosition = this.convertToWorldSpace(cc.PointZero());
+            currentPosition = this.convertToWorldSpace(this._pointZeroForParticle);
         } else if (this._positionType == cc.PARTICLE_TYPE_RELATIVE) {
             currentPosition = cc.p(this._position.x, this._position.y);
         }
 
-        if (this._isVisible) {
+        if (this._visible) {
             while (this._particleIdx < this._particleCount) {
                 var selParticle = this._particles[this._particleIdx];
 
@@ -1619,10 +1663,11 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
                     if (this._emitterMode == cc.PARTICLE_MODE_GRAVITY) {
                         var tmp, radial, tangential;
 
-                        radial = cc.PointZero();
                         // radial acceleration
                         if (selParticle.pos.x || selParticle.pos.y)
                             radial = cc.pNormalize(selParticle.pos);
+                        else
+                            radial = cc.PointZero();
 
                         tangential = radial;
                         radial = cc.pMult(radial, selParticle.modeA.radialAccel);
@@ -1697,6 +1742,10 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
                     // life < 0
                     var currentIndex = selParticle.atlasIndex;
                     cc.ArrayRemoveObject(this._particles, selParticle);
+
+                    //cache particle to pool
+                    this._particlePool.push(selParticle);
+
                     if (this._batchNode) {
                         //disable the switched particle
                         this._batchNode.disableParticle(this._atlasIndex + currentIndex);
@@ -1765,10 +1814,6 @@ cc.ParticleSystem = cc.Node.extend(/** @lends cc.ParticleSystem# */{
     }
 });
 
-cc.encodeToBase64 = function (data) {
-    return btoa(String.fromCharCode.apply(data, data)).replace(/.{76}(?=.)/g, '$&\n');
-};
-
 /**
  * <p> return the string found by key in dict. <br/>
  *    This plist files can be creted manually or with Particle Designer:<br/>
@@ -1778,11 +1823,13 @@ cc.encodeToBase64 = function (data) {
  * @return {cc.ParticleSystem}
  */
 cc.ParticleSystem.create = function (plistFile) {
-    var ret = new cc.ParticleSystem();
-    if (ret && ret.initWithFile(plistFile)) {
-        return ret;
-    }
-    return null;
+    return cc.ParticleSystemQuad.create(plistFile);
+};
+
+cc.ParticleSystem.createWithTotalParticles = function (number_of_particles) {
+    var emitter = cc.ParticleSystemQuad.create(number_of_particles);
+    //emitter.initWithTotalParticles(number_of_particles);
+    return emitter;
 };
 
 // Different modes
@@ -1840,3 +1887,57 @@ cc.ParticleSystem.ModeB = function (startRadius, startRadiusVar, endRadius, endR
     /** Variance in degrees for rotatePerSecond. Only available in 'Radius' mode. */
     this.rotatePerSecondVar = rotatePerSecondVar || 0;
 };
+
+
+cc.encodeToBase64 = function (bytes) {
+
+    //return btoa(String.fromCharCode.apply(data, data)).replace(/.{76}(?=.)/g, '$&\n');
+
+    var padding = '=',
+        chrTable = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/',
+        binTable = [
+            -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+            -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
+            -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,62, -1,-1,-1,63,
+            52,53,54,55, 56,57,58,59, 60,61,-1,-1, -1, 0,-1,-1,
+            -1, 0, 1, 2,  3, 4, 5, 6,  7, 8, 9,10, 11,12,13,14,
+            15,16,17,18, 19,20,21,22, 23,24,25,-1, -1,-1,-1,-1,
+            -1,26,27,28, 29,30,31,32, 33,34,35,36, 37,38,39,40,
+            41,42,43,44, 45,46,47,48, 49,50,51,-1, -1,-1,-1,-1
+        ];
+
+    var result = '',
+        length = bytes.length,
+        i;
+
+    // Convert every three bytes to 4 ascii characters.
+    for(i = 0; i < (length - 2); i += 3) {
+        result += chrTable[bytes[i] >> 2];
+        result += chrTable[((bytes[i] & 0x03) << 4) + (bytes[i + 1] >> 4)];
+        result += chrTable[((bytes[i + 1] & 0x0f) << 2) + (bytes[i + 2] >> 6)];
+        result += chrTable[bytes[i + 2] & 0x3f];
+    }
+
+    // Convert the remaining 1 or 2 bytes, pad out to 4 characters.
+    if (length % 3) {
+
+        i = length - (length % 3);
+
+        result += chrTable[bytes[i] >> 2];
+        if ((length % 3) === 2) {
+
+            result += chrTable[((bytes[i] & 0x03) << 4) + (bytes[i + 1] >> 4)];
+            result += chrTable[(bytes[i + 1] & 0x0f) << 2];
+            result += padding;
+
+        } else {
+            result += chrTable[(bytes[i] & 0x03) << 4];
+            result += padding + padding;
+        }
+
+    }
+
+    return result;
+
+};
+

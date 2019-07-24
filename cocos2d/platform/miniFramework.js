@@ -77,7 +77,12 @@ cc.$ = function (x) {
          * @return {cc.$}
          */
         el.addClass = el.addClass || function (cls) {
-            if (!this.hasClass(cls)) this.className += " " + cls;
+            if (!this.hasClass(cls)) {
+                if (this.className) {
+                    this.className += " ";
+                }
+                this.className += cls;
+            }
             return this;
         };
         /**
@@ -205,6 +210,10 @@ switch (cc.Browser.type) {
     case "ie":
         cc.$.pfx = "ms";
         cc.$.hd = false;
+        break;
+    default:
+        cc.$.pfx = "webkit";
+        cc.$.hd = true;
 }
 //cache for prefixed transform
 cc.$.trans = cc.$.pfx + "Transform";

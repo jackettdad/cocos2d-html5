@@ -152,7 +152,7 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
     _scenesStack:null,
     _projectionDelegate:null,
     _runningScene:null,
-    _szFPS:'',
+
     _frames:0,
     _totalFrames:0,
     _secondsPerFrame:0,
@@ -164,15 +164,28 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
     _touchDispatcher:null,
     _keyboardDispatcher:null,
     _accelerometer:null,
+    _mouseDispatcher:null,
 
     _watcherFun:null,
     _watcherSender:null,
+
+    _isBlur:false,
 
     /**
      * Constructor
      */
     ctor:function () {
+        this._lastUpdate = Date.now();
+        if (!cc.isAddedHiddenEvent) {
+            var selfPointer = this;
+            window.addEventListener("focus", function () {
+                selfPointer._lastUpdate = Date.now();
+            }, false);
+        }
+    },
 
+    _resetLastUpdate:function () {
+        this._lastUpdate = Date.now();
     },
 
     /**
@@ -198,8 +211,7 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
         this._frameRate = 0;
         this._displayStats = false;//can remove
         this._totalFrames = this._frames = 0;
-        this._szFPS = "";
-        this._lastUpdate = new cc.timeval();
+        this._lastUpdate = Date.now();
 
         //Paused?
         this._paused = false;
@@ -228,7 +240,11 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
         this._keyboardDispatcher = cc.KeyboardDispatcher.getInstance();
 
         //accelerometer
-        //this._accelerometer = new cc.Accelerometer();
+        this._accelerometer = new cc.Accelerometer();
+
+        //MouseDispatcher
+        this._mouseDispatcher = new cc.MouseDispatcher();
+        this._mouseDispatcher.init();
 
         return true;
     },
@@ -237,21 +253,14 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
      * calculates delta time since last time it was called
      */
     calculateDeltaTime:function () {
-        var now = new cc.timeval();
-        now = cc.Time.gettimeofdayCocos2d();
-        if (!now) {
-            cc.log("error in gettimeofday");
-            this._deltaTime = 0;
-            return;
-        }
+        var now = Date.now();
 
         // new delta time.
         if (this._nextDeltaTimeZero) {
             this._deltaTime = 0;
             this._nextDeltaTimeZero = false;
         } else {
-            this._deltaTime = (now.tv_sec - this._lastUpdate.tv_sec) + (now.tv_usec - this._lastUpdate.tv_usec) / 1000000.0;
-            this._deltaTime = Math.max(0, this._deltaTime);
+            this._deltaTime = (now - this._lastUpdate) / 1000;
         }
 
         if (cc.DEBUG) {
@@ -494,6 +503,24 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
         return this._winSizeInPixels;
     },
 
+    getVisibleSize:function () {
+        if (this._openGLView) {
+            return this._openGLView.getVisibleSize();
+        }
+        else {
+            return cc.size(0,0);
+        }
+    },
+
+    getVisibleOrigin:function () {
+        if (this._openGLView) {
+            return this._openGLView.getVisibleOrigin();
+        }
+        else {
+            return cc.p(0, 0);
+        }
+    },
+
     getZEye:function () {
         return (this._winSizeInPixels.height / 1.1566 / cc.CONTENT_SCALE_FACTOR());
     },
@@ -650,7 +677,7 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
         //this.addRegionToDirtyRegion(cc.rect(0, 0, cc.canvas.width, cc.canvas.height));
 
         this.setAnimationInterval(this._oldAnimationInterval);
-        this._lastUpdate = cc.Time.gettimeofdayCocos2d();
+        this._lastUpdate = Date.now();
         if (!this._lastUpdate) {
             cc.log("cocos2d: Director: Error in gettimeofday");
         }
@@ -809,8 +836,8 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
             this._openGLView = openGLView;
 
             // set size
-            this._winSizeInPoints = this._openGLView.getSize();
-            this._winSizeInPixels = cc.size(this._winSizeInPoints.width * this._contentScaleFactor, this._winSizeInPoints.height * this._contentScaleFactor);
+            //this._winSizeInPoints = this._openGLView.getDesignResolutionSize();
+            //this._winSizeInPixels = cc.size(this._winSizeInPoints.width * this._contentScaleFactor, this._winSizeInPoints.height * this._contentScaleFactor);
 
             this._createStatsLabel();
 
@@ -820,9 +847,9 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
 
             //CHECK_GL_ERROR_DEBUG();
 
-            if (this._contentScaleFactor != 1) {
-                this.updateContentScaleFactor();
-            }
+            /* if (this._contentScaleFactor != 1) {
+             this.updateContentScaleFactor();
+             }*/
 
             this._openGLView.setTouchDelegate(this._touchDispatcher);
             this._touchDispatcher.setDispatchEvents(true);
@@ -854,7 +881,7 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
                 break;
             case cc.DIRECTOR_PROJECTION_3D:
                 //TODO OpenGl
-                /* float zeye = this->getZEye();
+                /* float zeye = this.getZEye();
 
                  kmMat4 matrixPerspective, matrixLookup;
 
@@ -906,9 +933,7 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
                     this._frames = 0;
                     this._accumDt = 0;
 
-                    this._szFPS = ('' + this._frameRate.toFixed(1));
-                    this._FPSLabel.setString(this._szFPS);
-
+                    this._FPSLabel.setString(this._frameRate.toFixed(1));
                     this._drawsLabel.setString((0 | cc.g_NumberOfDraws).toString());
                 }
                 this._FPSLabel.visit();
@@ -1107,6 +1132,15 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
         }
     },
 
+    getMouseDispatcher:function () {
+        return this._mouseDispatcher;
+    },
+
+    setMouseDispatcher:function (mouseDispatcher) {
+        if (this._mouseDispatcher != mouseDispatcher)
+            this._mouseDispatcher = mouseDispatcher;
+    },
+
     _createStatsLabel:function () {
         this._FPSLabel = cc.LabelTTF.create("00.0", "Arial", 18, cc.size(60, 16), cc.TEXT_ALIGNMENT_RIGHT);
         this._SPFLabel = cc.LabelTTF.create("0.000", "Arial", 18, cc.size(60, 16), cc.TEXT_ALIGNMENT_RIGHT);
@@ -1118,9 +1152,8 @@ cc.Director = cc.Class.extend(/** @lends cc.Director# */{
     },
 
     _calculateMPF:function () {
-        var now = cc.Time.gettimeofdayCocos2d();
-
-        this._secondsPerFrame = (now.tv_sec - this._lastUpdate.tv_sec) + (now.tv_usec - this._lastUpdate.tv_usec) / 1000000.0;
+        var now = Date.now();
+        this._secondsPerFrame = (now - this._lastUpdate) / 1000;
     }
 });
 
@@ -1148,7 +1181,7 @@ cc.DisplayLinkDirector = cc.Director.extend(/** @lends cc.DisplayLinkDirector# *
      * start Animation
      */
     startAnimation:function () {
-        this._lastUpdate = cc.Time.gettimeofdayCocos2d();
+        this._nextDeltaTimeZero = true;
         this.invalid = false;
         cc.Application.sharedApplication().setAnimationInterval(this._animationInterval);
     },
@@ -1200,6 +1233,7 @@ cc.Director.getInstance = function () {
         cc.firstUseDirector = false;
         cc.s_SharedDirector = new cc.DisplayLinkDirector();
         cc.s_SharedDirector.init();
+        cc.s_SharedDirector.setOpenGLView(cc.EGLView.getInstance());
     }
     return cc.s_SharedDirector;
 };
